@@ -1,34 +1,36 @@
-#this app will take CORINE2018 land cover map data and allow the user to assign 
-#different values to the different land covers 
+#This app allows the user to assign a "value" to the land cover types in Belgium.
+#It uses data from the CORINE2018 classified to its broad level 2 land classifications. 
 
 #load packages
+#install.packages("shiny")
+#install.packages("terra")
+#install.packages("RColorBrewer")
 library(shiny)
-library(terra)
+#packages can also be called inline by packagename::function e.g terra::plot()
 
 #load data pre prepared data
-#lc_b <- readRDS("data/lc_b.rds") #Corine land cover map 2018 of Belgium classified to its 
-#CORINE level 2 land cover classes (5 classes)
+#This a raster of the CORINE2018 land cover map classified to its broad level 2 land classifications cropped to Belgium
+#where the values
+#1 = Artificial surfaces
+#2 = Agricultural areas
+#3 = Forest and semi natural areas
+#4 = Wetlands
+#5 = Water bodies
 
-
-lc_b <- terra::rast("data/lc_b.tif") #Corine land cover map 2018 of Belgium classified to its 
-#CORINE level 2 land cover classes (5 classes)
+lc_b <- terra::rast("data/lc_b.tif") 
 
 
 #defin user interface (ui)
-ui <- fluidPage(
+ui <- fluidPage( 
   
   #App title ----
   titlePanel("Valuing land in Belgium"),
   
   # Sidebar layout with input and output definitions ----
   sidebarLayout(
-    
-    # 
     sidebarPanel(
       
-      
       # Input: slider for weighting Artificial surfaces land cover class----
-      
       sliderInput(inputId = "art", #the id assigned to this input that is used by the server
                   label = "Artificial surfaces:", #the label of this slider that is displayed in the ui 
                   min = 0, max = 1, #the min and max values of the slider
@@ -66,8 +68,17 @@ ui <- fluidPage(
     
     # Main panel for displaying outputs ----
     mainPanel(
-      plotOutput("lc_map_w"),
+      
+      column(6, #creates a column on width 6 to output the below map into (max = 12)
+             #this is so that the two maps can be viewed side by side
+      #outputs the weighted land cover map created in the server
+      plotOutput("lc_map_w")
+      ),
+      
+      column(6, 
+      #outputs the land cover map created in the server
       plotOutput("lc_map")
+      )
     )
 
   )
@@ -82,7 +93,7 @@ server <- function(input, output) {
   #and weights lc_b by the users land cover slider weights
   w_lc <- reactive({ 
     
-    #create look up table to weight by
+    #create look up table to weight the values in the land cover map (lc_b) by 
     lkp_w = data.frame(
       #id of the land cover in the land cover map for Belgium
       lc_id = 1:5,
@@ -98,21 +109,33 @@ server <- function(input, output) {
   })
     
     #classify lc_b to lkp_w
-    output$lc_map_w = renderPlot({ #land cover map weighted 
-
-      lkp_w <- w_lc()
-
+    output$lc_map_w <-  renderPlot({ #land cover map weighted 
+      
+      #classifying lc_b by the lookup table of the user assigned weights lkp_w
       lc_b = terra::classify(lc_b,
-                             lkp_w,
+                             w_lc(), #to use data from a reactive function you must call it as a function hence the brackets
                              others = NA)
-      terra::plot(lc_b)
+      
+      #plot the weighted land cover map using a blue color palette 
+      terra::plot(lc_b,
+                  col = RColorBrewer::brewer.pal(n = 5,
+                                                 name = "Blues"))
     
   })
     
-    #land use map
-    output$lc_map <- renderPlot(terra::plot(lc_b,
-                                            col = RColorBrewer::brewer.pal(n = 5,
-                                                                           name = "RdBu")))
+    #plot the land cover map lc_b with a custome pallet
+    #this map is for reference and does not react to the slider input
+    output$lc_map <- renderPlot(
+      terra::plot(lc_b,
+                  col = c("gray", "orange", "darkgreen", "pink", "blue"),
+                  plg=list(legend=c("Artificial surfaces", 
+                                    "Agricultural areas", 
+                                    "Forest and semi natural areas", 
+                                    "Wetlands",
+                                    "Water bodies")) #legend labels
+    )
+    )
 }
 
+#run the app
 shinyApp(ui, server)

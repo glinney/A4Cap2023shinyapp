@@ -1,0 +1,14 @@
+name: A4Cap2023shinyapp
+title: A4Cap2023shinyapp
+username:
+account: glinney
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 8471452
+bundleId: 6912730
+url: https://glinney.shinyapps.io/A4Cap2023shinyapp/
+when: 1677867003.18586
+lastSyncTime: 1677867003.18589
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data-raw
